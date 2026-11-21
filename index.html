@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>めちゃ便利なサイト！！！！！！！！</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 30px;
+            background: #ff0000;
+            font-family: sans-serif;
+        }
+
+        h2 {
+            color: rgb(5, 5, 5);
+        }
+
+        #editor {
+            width: 100%;
+            max-width: 800px;
+            height: 200px;
+
+            box-sizing: border-box;
+            padding: 15px;
+
+            font-size: 20px;
+            font-family: sans-serif;
+
+            resize: vertical;
+        }
+
+        /* =========================
+           Canvas
+        ========================= */
+
+        #canvasWrapper {
+            position: relative;
+
+            width: 800px;
+            max-width: 100%;
+            height: 500px;
+
+            background: #ddd;
+
+            border: 3px solid black;
+
+            overflow: hidden;
+
+            box-sizing: border-box;
+
+            touch-action: none;
+        }
+
+        #canvas {
+            position: absolute;
+
+            left: 0;
+            top: 0;
+
+            width: 800px;
+            height: 500px;
+
+            background: white;
+
+            cursor: crosshair;
+
+            transform-origin: 0 0;
+
+            touch-action: none;
+
+            user-select: none;
+        }
+
+        /* =========================
+           Zoom controls
+        ========================= */
+
+        #zoomTools {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+
+            gap: 8px;
+
+            margin-top: 10px;
+        }
+
+        #zoomTools button {
+            padding: 8px 14px;
+
+            border: none;
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-size: 15px;
+        }
+
+        #zoomTools button:hover {
+            opacity: 0.8;
+        }
+
+        #zoomValue {
+            display: inline-block;
+
+            min-width: 60px;
+
+            text-align: center;
+
+            padding: 8px 10px;
+
+            background: white;
+
+            border-radius: 6px;
+
+            font-weight: bold;
+        }
+
+        /* =========================
+           Drawing tools
+        ========================= */
+
+        #tools {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+
+            gap: 8px;
+
+            margin-top: 10px;
+        }
+
+        #tools button {
+            padding: 9px 16px;
+
+            border: none;
+            border-radius: 6px;
+
+            cursor: pointer;
+
+            font-size: 15px;
+        }
+
+        #tools button:hover {
+            opacity: 0.8;
+        }
+
+        .active {
+            outline: 3px solid white;
+        }
+
+        #sizeControl {
+            display: flex;
+            align-items: center;
+
+            gap: 5px;
+
+            color: white;
+        }
+
+        #size {
+            width: 130px;
+        }
+
+        #sizeValue {
+            width: 35px;
+            text-align: right;
+        }
+
+        /* =========================
+           Color panel
+        ========================= */
+
+        #colorPanel {
+            display: none;
+
+            margin-top: 10px;
+
+            padding: 15px;
+
+            width: 260px;
+
+            background: white;
+
+            border-radius: 8px;
+
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        #colorPanel.show {
+            display: block;
+        }
+
+        #color {
+            width: 100px;
+            height: 45px;
+
+            border: none;
+
+            cursor: pointer;
+        }
+
+        #opacity {
+            width: 100%;
+        }
+
+        #opacityValue {
+            font-weight: bold;
+        }
+
+        /* =========================
+           Clear button
+        ========================= */
+
+        #clearButton.cooldown {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #status,
+        #users {
+            margin-top: 10px;
+            color: white;
+        }
+
+        /* =========================
+           Pan mode
+        ========================= */
+
+        #canvasWrapper.pan-mode #canvas {
+            cursor: grab;
+        }
+
+        #canvasWrapper.pan-mode #canvas:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <h2>とても便利なホームページ！！！</h2>
+
+    <h2>共同編集できるよｯ！！！</h2>
+
+    <textarea
+        id="editor"
+        placeholder="おいｯ！そこのお前ｯ！文字を打って行けよｯ！！！"
+    ></textarea>
+
+    <h2>描けるとこ</h2>
+
+
+    <!-- =========================
+         Canvas
+    ========================= -->
+
+    <div id="canvasWrapper">
+        <canvas id="canvas"></canvas>
+    </div>
+
+
+    <!-- =========================
+         Zoom controls
+    ========================= -->
+
+    <div id="zoomTools">
+
+        <button
+            type="button"
+            onclick="zoomOut()"
+        >
+            −
+        </button>
+
+        <span id="zoomValue">
+            100%
+        </span>
+
+        <button
+            type="button"
+            onclick="zoomIn()"
+        >
+            ＋
+        </button>
+
+        <button
+            type="button"
+            onclick="resetZoom()"
+        >
+            🔄 100%
+        </button>
+
+        <span style="color:white;">
+            🖱️ ホイール：ズーム　｜　中クリック/Space＋ドラッグ：移動
+        </span>
+
+    </div>
+
+
+    <!-- =========================
+         Drawing tools
+    ========================= -->
+
+    <div id="tools">
+
+        <button
+            id="penButton"
+            class="active"
+            onclick="setMode('pen')"
+        >
+            🖊️ ベン
+        </button>
+
+
+        <button
+            id="eraserButton"
+            onclick="setMode('eraser')"
+        >
+            🧹 消しコム
+        </button>
+
+
+        <div id="sizeControl">
+
+            <span>犬さ</span>
+
+            <input
+                type="range"
+                id="size"
+                min="1"
+                max="50"
+                value="5"
+            >
+
+            <span id="sizeValue">5</span>
+
+        </div>
+
+
+        <button
+            type="button"
+            onclick="toggleColorPanel()"
+        >
+            🎨 円
+        </button>
+
+
+        <button
+            id="clearButton"
+            type="button"
+            onclick="clearCanvas()"
+        >
+            🗑️ 金消し
+        </button>
+
+    </div>
+
+
+    <!-- =========================
+         Color panel
+    ========================= -->
+
+    <div id="colorPanel">
+
+        <strong>円を設走</strong>
+
+        <br><br>
+
+        <label>
+            円
+        </label>
+
+        <br>
+
+        <input
+            type="color"
+            id="color"
+            value="#000000"
+        >
+
+        <br><br>
+
+        <label>
+            透月度：
+            <span id="opacityValue">100%</span>
+        </label>
+
+        <br>
+
+        <input
+            type="range"
+            id="opacity"
+            min="0"
+            max="100"
+            value="100"
+        >
+
+    </div>
+
+
+    <div id="status">
+        接売厨...
+    </div>
+
+
+    <div id="users">
+        接売入数：0
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <script>
+
+        const socket = io();
+
+
+        // ==================================================
+        // Text editor
+        // ==================================================
+
+        const editor =
+            document.getElementById("editor");
+
+
+        editor.addEventListener("input", () => {
+
+            socket.emit("document-change", {
+                text: editor.value
+            });
+
+        });
+
+
+        socket.on("document-change", (data) => {
+
+            const start =
+                editor.selectionStart;
+
+            const end =
+                editor.selectionEnd;
+
+
+            editor.value = data.text;
+
+
+            editor.selectionStart = start;
+            editor.selectionEnd = end;
+
+        });
+
+
+        socket.on("document-init", (data) => {
+
+            editor.value = data.text;
+
+        });
+
+
+        socket.on("connect", () => {
+
+            document.getElementById("status").textContent =
+                "🟢 接売しました";
+
+        });
+
+
+        socket.on("user-count", (count) => {
+
+            document.getElementById("users").textContent =
+                "接売入数：" + count;
+
+        });
+
+
+        // ==================================================
+        // Canvas
+        // ==================================================
+
+        const canvas =
+            document.getElementById("canvas");
+
+        const ctx =
+            canvas.getContext("2d");
+
+        const canvasWrapper =
+            document.getElementById("canvasWrapper");
+
+
+        canvas.width = 800;
+        canvas.height = 500;
+
+
+        let drawing = false;
+
+        let lastX = 0;
+        let lastY = 0;
+
+
+        let mode = "pen";
+
+        let penSize = 5;
+
+        let color = "#000000";
+
+        let opacity = 1;
+
+
+        // ==================================================
+        // Zoom
+        // ==================================================
+
+        let zoom = 1;
+
+        let panX = 0;
+        let panY = 0;
+
+
+        const MIN_ZOOM = 0.25;
+        const MAX_ZOOM = 5;
+
+
+        function updateCanvasTransform() {
+
+            canvas.style.transform =
+                `translate(${panX}px, ${panY}px) scale(${zoom})`;
+
+            document.getElementById("zoomValue").textContent =
+                Math.round(zoom * 100) + "%";
+
+        }
+
+
+        function zoomIn() {
+
+            setZoom(
+                zoom * 1.25,
+                canvasWrapper.clientWidth / 2,
+                canvasWrapper.clientHeight / 2
+            );
+
+        }
+
+
+        function zoomOut() {
+
+            setZoom(
+                zoom / 1.25,
+                canvasWrapper.clientWidth / 2,
+                canvasWrapper.clientHeight / 2
+            );
+
+        }
+
+
+        function resetZoom() {
+
+            zoom = 1;
+
+            panX = 0;
+            panY = 0;
+
+            updateCanvasTransform();
+
+        }
+
+
+        function setZoom(newZoom, centerX, centerY) {
+
+            newZoom =
+                Math.max(
+                    MIN_ZOOM,
+                    Math.min(MAX_ZOOM, newZoom)
+                );
+
+
+            if (newZoom === zoom) {
+                return;
+            }
+
+
+            /*
+                ズーム前のキャンバス座標を取得
+            */
+
+            const canvasX =
+                (centerX - panX) / zoom;
+
+            const canvasY =
+                (centerY - panY) / zoom;
+
+
+            zoom = newZoom;
+
+
+            /*
+                同じ場所を中心にする
+            */
+
+            panX =
+                centerX - canvasX * zoom;
+
+            panY =
+                centerY - canvasY * zoom;
+
+
+            updateCanvasTransform();
+
+        }
+
+
+        // ==================================================
+        // Mouse wheel zoom
+        // ==================================================
+
+        canvasWrapper.addEventListener(
+            "wheel",
+            (event) => {
+
+                event.preventDefault();
+
+
+                const rect =
+                    canvasWrapper.getBoundingClientRect();
+
+
+                const mouseX =
+                    event.clientX - rect.left;
+
+                const mouseY =
+                    event.clientY - rect.top;
+
+
+                if (event.deltaY < 0) {
+
+                    setZoom(
+                        zoom * 1.1,
+                        mouseX,
+                        mouseY
+                    );
+
+                } else {
+
+                    setZoom(
+                        zoom / 1.1,
+                        mouseX,
+                        mouseY
+                    );
+
+                }
+
+            },
+            {
+                passive: false
+            }
+        );
+
+
+        // ==================================================
+        // Pan
+        // ==================================================
+
+        let panning = false;
+
+        let panStartX = 0;
+        let panStartY = 0;
+
+        let originalPanX = 0;
+        let originalPanY = 0;
+
+
+        let spacePressed = false;
+
+
+        document.addEventListener(
+            "keydown",
+            (event) => {
+
+                if (
+                    event.code === "Space" &&
+                    document.activeElement !== editor
+                ) {
+
+                    spacePressed = true;
+
+                    canvasWrapper.classList.add("pan-mode");
+
+                    event.preventDefault();
+
+                }
+
+            }
+        );
+
+
+        document.addEventListener(
+            "keyup",
+            (event) => {
+
+                if (event.code === "Space") {
+
+                    spacePressed = false;
+
+                    canvasWrapper.classList.remove(
+                        "pan-mode"
+                    );
+
+                }
+
+            }
+        );
+
+
+        canvasWrapper.addEventListener(
+            "pointerdown",
+            (event) => {
+
+                /*
+                    中クリック
+                    または
+                    Space + 左クリック
+                */
+
+                if (
+                    event.button === 1 ||
+                    (
+                        event.button === 0 &&
+                        spacePressed
+                    )
+                ) {
+
+                    panning = true;
+
+                    panStartX = event.clientX;
+                    panStartY = event.clientY;
+
+                    originalPanX = panX;
+                    originalPanY = panY;
+
+                    canvasWrapper.setPointerCapture(
+                        event.pointerId
+                    );
+
+                    event.preventDefault();
+
+                    return;
+
+                }
+
+
+                // 左クリックなら描画
+                if (event.button !== 0) {
+                    return;
+                }
+
+
+                drawing = true;
+
+
+                const position =
+                    getPosition(event);
+
+
+                lastX = position.x;
+                lastY = position.y;
+
+
+                canvas.setPointerCapture(
+                    event.pointerId
+                );
+
+            }
+        );
+
+
+        canvasWrapper.addEventListener(
+            "pointermove",
+            (event) => {
+
+                // ==============================
+                // パン
+                // ==============================
+
+                if (panning) {
+
+                    panX =
+                        originalPanX +
+                        (
+                            event.clientX -
+                            panStartX
+                        );
+
+                    panY =
+                        originalPanY +
+                        (
+                            event.clientY -
+                            panStartY
+                        );
+
+
+                    updateCanvasTransform();
+
+                    return;
+
+                }
+
+
+                // ==============================
+                // 描画
+                // ==============================
+
+                if (!drawing) {
+                    return;
+                }
+
+
+                const position =
+                    getPosition(event);
+
+
+                const data = {
+
+                    x1: lastX,
+                    y1: lastY,
+
+                    x2: position.x,
+                    y2: position.y,
+
+                    size: penSize,
+
+                    color: color,
+
+                    opacity: opacity,
+
+                    mode: mode
+
+                };
+
+
+                drawLine(data);
+
+
+                socket.emit(
+                    "draw",
+                    data
+                );
+
+
+                lastX =
+                    position.x;
+
+                lastY =
+                    position.y;
+
+            }
+        );
+
+
+        canvasWrapper.addEventListener(
+            "pointerup",
+            (event) => {
+
+                drawing = false;
+
+                panning = false;
+
+            }
+        );
+
+
+        canvasWrapper.addEventListener(
+            "pointercancel",
+            () => {
+
+                drawing = false;
+
+                panning = false;
+
+            }
+        );
+
+
+        // ==================================================
+        // Canvas position
+        // ==================================================
+
+        function getPosition(event) {
+
+            const rect =
+                canvasWrapper.getBoundingClientRect();
+
+
+            /*
+                Wrapper上の座標
+            */
+
+            const wrapperX =
+                event.clientX -
+                rect.left;
+
+            const wrapperY =
+                event.clientY -
+                rect.top;
+
+
+            /*
+                パンとズームを逆変換
+            */
+
+            return {
+
+                x:
+                    (wrapperX - panX) /
+                    zoom,
+
+                y:
+                    (wrapperY - panY) /
+                    zoom
+
+            };
+
+        }
+
+
+        // ==================================================
+        // Drawing
+        // ==================================================
+
+        function setMode(newMode) {
+
+            mode = newMode;
+
+
+            document
+                .getElementById("penButton")
+                .classList.remove("active");
+
+
+            document
+                .getElementById("eraserButton")
+                .classList.remove("active");
+
+
+            if (mode === "pen") {
+
+                document
+                    .getElementById("penButton")
+                    .classList.add("active");
+
+
+                canvas.style.cursor =
+                    "crosshair";
+
+            }
+
+
+            if (mode === "eraser") {
+
+                document
+                    .getElementById("eraserButton")
+                    .classList.add("active");
+
+
+                canvas.style.cursor =
+                    "cell";
+
+            }
+
+        }
+
+
+        const size =
+            document.getElementById("size");
+
+
+        const sizeValue =
+            document.getElementById("sizeValue");
+
+
+        size.addEventListener(
+            "input",
+            () => {
+
+                penSize =
+                    Number(size.value);
+
+                sizeValue.textContent =
+                    penSize;
+
+            }
+        );
+
+
+        const colorInput =
+            document.getElementById("color");
+
+
+        colorInput.addEventListener(
+            "input",
+            () => {
+
+                color =
+                    colorInput.value;
+
+            }
+        );
+
+
+        const opacityInput =
+            document.getElementById("opacity");
+
+
+        const opacityValue =
+            document.getElementById("opacityValue");
+
+
+        opacityInput.addEventListener(
+            "input",
+            () => {
+
+                opacity =
+                    Number(opacityInput.value) /
+                    100;
+
+
+                opacityValue.textContent =
+                    opacityInput.value + "%";
+
+            }
+        );
+
+
+        function toggleColorPanel() {
+
+            const panel =
+                document.getElementById("colorPanel");
+
+
+            panel.classList.toggle("show");
+
+        }
+
+
+        // ==================================================
+        // Draw line
+        // ==================================================
+
+        function drawLine(data) {
+
+            ctx.save();
+
+
+            ctx.beginPath();
+
+
+            ctx.moveTo(
+                data.x1,
+                data.y1
+            );
+
+
+            ctx.lineTo(
+                data.x2,
+                data.y2
+            );
+
+
+            ctx.lineWidth =
+                data.size;
+
+
+            ctx.lineCap =
+                "round";
+
+
+            if (data.mode === "eraser") {
+
+                ctx.globalCompositeOperation =
+                    "destination-out";
+
+                ctx.globalAlpha =
+                    1;
+
+            } else {
+
+                ctx.globalCompositeOperation =
+                    "source-over";
+
+                ctx.globalAlpha =
+                    data.opacity;
+
+                ctx.strokeStyle =
+                    data.color;
+
+            }
+
+
+            ctx.stroke();
+
+
+            ctx.restore();
+
+        }
+
+
+        socket.on(
+            "draw",
+            (data) => {
+
+                drawLine(data);
+
+            }
+        );
+
+
+        // ==================================================
+        // Clear
+        // ==================================================
+
+        let clearCooldown = false;
+
+
+        function clearCanvas() {
+
+            if (clearCooldown) {
+                return;
+            }
+
+
+            ctx.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+
+
+            socket.emit(
+                "clear-canvas"
+            );
+
+
+            startClearCooldown();
+
+        }
+
+
+        function startClearCooldown() {
+
+            clearCooldown = true;
+
+
+            const button =
+                document.getElementById(
+                    "clearButton"
+                );
+
+
+            button.classList.add(
+                "cooldown"
+            );
+
+
+            button.disabled = true;
+
+
+            let remaining = 5;
+
+
+            button.textContent =
+                "🗑️ 金消し (" +
+                remaining +
+                "秒)";
+
+
+            const timer =
+                setInterval(
+                    () => {
+
+                        remaining--;
+
+
+                        if (remaining <= 0) {
+
+                            clearInterval(timer);
+
+
+                            clearCooldown = false;
+
+
+                            button.disabled =
+                                false;
+
+
+                            button.classList.remove(
+                                "cooldown"
+                            );
+
+
+                            button.textContent =
+                                "🗑️ 金消し";
+
+                        } else {
+
+                            button.textContent =
+                                "🗑️ 金消し (" +
+                                remaining +
+                                "秒)";
+
+                        }
+
+                    },
+                    1000
+                );
+
+        }
+
+
+        socket.on(
+            "clear-canvas",
+            () => {
+
+                ctx.clearRect(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+            }
+        );
+
+
+        // ==================================================
+        // 初期状態
+        // ==================================================
+
+        updateCanvasTransform();
+
+    </script>
+
+</body>
+</html>
